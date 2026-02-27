@@ -16,13 +16,48 @@ namespace Neo.SmartContract.Framework.Services
     [Flags]
     public enum FindOptions : byte
     {
+        /// <summary>
+        /// No option is set. The results will be an iterator of (key, value).
+        /// </summary>
         None = 0,
 
+        /// <summary>
+        /// Indicates that only keys need to be returned. The results will be an iterator of keys.
+        /// KeysOnly cannot be used with ValuesOnly, DeserializeValues, PickField0, or PickField1.
+        /// </summary>
         KeysOnly = 1 << 0,
+
+        /// <summary>
+        /// Indicates that the prefix byte of keys should be removed before return.
+        /// </summary>
         RemovePrefix = 1 << 1,
+
+        /// <summary>
+        /// Indicates that only values need to be returned. The results will be an iterator of values.
+        /// ValuesOnly cannot be used with KeysOnly or RemovePrefix.
+        /// </summary>
         ValuesOnly = 1 << 2,
+
+        /// <summary>
+        /// Indicates that values should be deserialized before return.
+        /// </summary>
         DeserializeValues = 1 << 3,
+
+        /// <summary>
+        /// Indicates that only the field 0 of the deserialized values need to be returned. This flag must be set together with <see cref="DeserializeValues"/>.
+        /// PickField0 and PickField1 cannot be used together.
+        /// </summary>
         PickField0 = 1 << 4,
-        PickField1 = 1 << 5
+
+        /// <summary>
+        /// Indicates that only the field 1 of the deserialized values need to be returned. This flag must be set together with <see cref="DeserializeValues"/>.
+        /// PickField0 and PickField1 cannot be used together.
+        /// </summary>
+        PickField1 = 1 << 5,
+
+        /// <summary>
+        /// Indicates that results should be returned in backwards (descending) order.
+        /// </summary>
+        Backwards = 1 << 7,
     }
 }
