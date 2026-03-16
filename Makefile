@@ -224,7 +224,6 @@ compile-here: build
 update:
 	@echo "Updating dependencies..."
 	@$(DOTNET) restore ./neo-devpack-dotnet.sln
-	@git submodule update --init --recursive
 	@echo "Dependencies updated!"
 
 # Run specific test

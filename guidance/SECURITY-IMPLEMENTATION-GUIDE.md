@@ -275,10 +275,7 @@ public class SafeInteractions : SmartContract
         // Validate target contract
         ExecutionEngine.Assert(IsWhitelistedContract(targetContract), "Contract not whitelisted");
         ExecutionEngine.Assert(!string.IsNullOrEmpty(method), "Invalid method");
-        
-        // Set call limits
-        const int MAX_GAS = 1_000_000;
-        
+
         try
         {
             // Make the call with gas limit
