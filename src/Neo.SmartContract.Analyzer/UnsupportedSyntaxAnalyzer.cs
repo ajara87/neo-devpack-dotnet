@@ -40,7 +40,6 @@ public sealed class UnsupportedSyntaxAnalyzer : DiagnosticAnalyzer
     public const string GlobalUsingRuleId = "NC4049";
     public const string ListPatternRuleId = "NC4050";
     public const string Utf8LiteralRuleId = "NC4051";
-    public const string DefaultInterfaceMethodRuleId = "NC4052";
     public const string FileLocalTypeRuleId = "NC4053";
     public const string RefReadonlyParameterRuleId = "NC4054";
 
@@ -124,11 +123,6 @@ public sealed class UnsupportedSyntaxAnalyzer : DiagnosticAnalyzer
         "UTF-8 string literals are not supported",
         "String literals with the 'u8' suffix are not supported by the Neo compiler.");
 
-    private static readonly DiagnosticDescriptor DefaultInterfaceMethodRule = CreateDescriptor(
-        DefaultInterfaceMethodRuleId,
-        "Default interface members are not supported",
-        "Interface members cannot provide bodies in Neo smart contracts.");
-
     private static readonly DiagnosticDescriptor FileLocalTypeRule = CreateDescriptor(
         FileLocalTypeRuleId,
         "File-local types are not supported",
@@ -159,7 +153,6 @@ public sealed class UnsupportedSyntaxAnalyzer : DiagnosticAnalyzer
         GlobalUsingRule,
         ListPatternRule,
         Utf8LiteralRule,
-        DefaultInterfaceMethodRule,
         FileLocalTypeRule,
         RefReadonlyParameterRule);
 
@@ -215,11 +208,6 @@ public sealed class UnsupportedSyntaxAnalyzer : DiagnosticAnalyzer
             context.ReportDiagnostic(Diagnostic.Create(AsyncMethodRule, method.Modifiers.First(m => m.IsKind(SyntaxKind.AsyncKeyword)).GetLocation()));
         }
 
-        if (method.Parent is InterfaceDeclarationSyntax && (method.Body is not null || method.ExpressionBody is not null))
-        {
-            var location = method.Identifier.GetLocation();
-            context.ReportDiagnostic(Diagnostic.Create(DefaultInterfaceMethodRule, location));
-        }
     }
 
     private static void AnalyzeForEachStatement(SyntaxNodeAnalysisContext context)

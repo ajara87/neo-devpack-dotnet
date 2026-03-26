@@ -283,9 +283,13 @@ namespace Neo.Compiler
             if (type.SpecialType == SpecialType.System_Object) yield break;
             if (type.Name == nameof(Attribute)) yield break;
             List<ISymbol> myMembers = type.GetMembers().ToList();
-            if (type.IsReferenceType)
+            if (type is INamedTypeSymbol namedType && (namedType.TypeKind == TypeKind.Class || namedType.TypeKind == TypeKind.Struct))
             {
-                foreach (ISymbol member in GetAllMembersInternal(type.BaseType!))
+                AddDefaultInterfaceMethods(namedType, myMembers);
+            }
+            if (type.IsReferenceType && type.BaseType is not null)
+            {
+                foreach (ISymbol member in GetAllMembersInternal(type.BaseType))
                 {
                     if (member is IMethodSymbol method && (method.MethodKind == MethodKind.Constructor || method.MethodKind == MethodKind.StaticConstructor))
                     {
@@ -313,6 +317,42 @@ namespace Neo.Compiler
             foreach (ISymbol member in myMembers)
             {
                 yield return member;
+            }
+        }
+
+        private static void AddDefaultInterfaceMethods(INamedTypeSymbol type, List<ISymbol> myMembers)
+        {
+            foreach (IMethodSymbol interfaceMethod in type.AllInterfaces
+                .SelectMany(i => i.GetMembers())
+                .OfType<IMethodSymbol>()
+                .Where(m => !m.IsStatic && !m.IsAbstract)
+                .Where(m => m.MethodKind == MethodKind.Ordinary || m.MethodKind == MethodKind.PropertyGet || m.MethodKind == MethodKind.PropertySet)
+                .Distinct<IMethodSymbol>(SymbolEqualityComparer.Default))
+            {
+                var implementation = type.FindImplementationForInterfaceMember(interfaceMethod);
+                if (implementation is null)
+                    continue;
+
+                // Roslyn returns the interface member itself when the type relies on the default body.
+                if (!SymbolEqualityComparer.Default.Equals(implementation, interfaceMethod))
+                    continue;
+
+                if (type.BaseType is INamedTypeSymbol baseType &&
+                    baseType.FindImplementationForInterfaceMember(interfaceMethod) is not null)
+                    continue;
+                var existingConflict = myMembers.OfType<IMethodSymbol>()
+                    .FirstOrDefault(m => m.Name == interfaceMethod.Name
+                            && m.Parameters.Length == interfaceMethod.Parameters.Length
+                            && !SymbolEqualityComparer.Default.Equals(m.ContainingType, interfaceMethod.ContainingType));
+                if (existingConflict is not null)
+                {
+                    throw new CompilationException(interfaceMethod, DiagnosticId.MethodNameConflict,
+                        $"Ambiguous default interface method '{interfaceMethod.Name}': " +
+                        $"both '{existingConflict.ContainingType.Name}' and '{interfaceMethod.ContainingType.Name}' " +
+                        $"provide a default implementation. The class '{type.Name}' must provide its own implementation.");
+                }
+                if (!myMembers.Any(member => SymbolEqualityComparer.Default.Equals(member, interfaceMethod)))
+                    myMembers.Add(interfaceMethod);
             }
         }
 
