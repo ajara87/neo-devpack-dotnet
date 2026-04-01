@@ -13,6 +13,7 @@ using Neo.Json;
 using Neo.Optimizer;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
+using Neo.SmartContract.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +27,30 @@ namespace Neo.Compiler.SecurityAnalyzer
     /// </summary>
     public static class ReEntrancyAnalyzer
     {
+        private static readonly HashSet<string> KnownSafeStdLibCalltMethods = new(StringComparer.Ordinal)
+        {
+            "serialize",
+            "deserialize",
+            "jsonSerialize",
+            "jsonDeserialize",
+            "base64Decode",
+            "base64Encode",
+            "base64UrlDecode",
+            "base64UrlEncode",
+            "base58Decode",
+            "base58Encode",
+            "base58CheckEncode",
+            "base58CheckDecode",
+            "hexEncode",
+            "hexDecode",
+            "itoa",
+            "atoi",
+            "memoryCompare",
+            "memorySearch",
+            "stringSplit",
+            "strLen"
+        };
+
         public class ReEntrancyVulnerabilityPair
         {
             // key block calls another contract; value blocks write storage
@@ -168,7 +193,13 @@ namespace Neo.Compiler.SecurityAnalyzer
                 int addr = b.startAddr;
                 foreach (VM.Instruction instruction in b.instructions)
                 {
-                    if (instruction.OpCode == VM.OpCode.SYSCALL)
+                    if (instruction.OpCode == VM.OpCode.CALLT)
+                    {
+                        uint tokenId = instruction.TokenU16;
+                        if (tokenId < nef.Tokens.Length && !IsKnownSafeNativeCallT(nef.Tokens[tokenId]))
+                            callOtherContractInstructions[b].Add(addr);
+                    }
+                    else if (instruction.OpCode == VM.OpCode.SYSCALL)
                     {
                         if (instruction.TokenU32 == ApplicationEngine.System_Contract_Call.Hash)
                             callOtherContractInstructions[b].Add(addr);
@@ -208,6 +239,12 @@ namespace Neo.Compiler.SecurityAnalyzer
                 }
             }
             return new(vulnerabilityPairs, callOtherContractInstructions, writeStorageInstructions, debugInfo);
+        }
+
+        private static bool IsKnownSafeNativeCallT(MethodToken token)
+        {
+            return token.Hash == NativeContract.StdLib.Hash
+                && KnownSafeStdLibCalltMethods.Contains(token.Method);
         }
 
         /// <summary>
