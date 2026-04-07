@@ -71,6 +71,8 @@ namespace Neo.Compiler
             rootCommand.AddOption(new Option<CompilationOptions.OptimizationType>("--optimize", $"Optimization level. e.g. --optimize={CompilationOptions.OptimizationType.All}"));
             rootCommand.AddOption(new Option<bool>("--no-inline", "Instruct the compiler not to insert inline code."));
             rootCommand.AddOption(new Option<byte>("--address-version", () => ProtocolSettings.Default.AddressVersion, "Indicates the address version used by the compiler."));
+            rootCommand.AddOption(new Option<CompilationTarget>("--target", () => CompilationTarget.NeoVM, "Compilation target: NeoVM (default) or RiscV."));
+            rootCommand.AddOption(new Option<bool>("--build-riscv", "After RISC-V compilation, build the .polkavm binary using cargo and polkatool."));
 
             var debugOption = new Option<CompilationOptions.DebugType>(["-d", "--debug"],
                 new ParseArgument<CompilationOptions.DebugType>(ParseDebug), description: "Indicates the debug level.")
