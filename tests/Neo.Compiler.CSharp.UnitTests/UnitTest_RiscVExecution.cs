@@ -265,6 +265,53 @@ public class UnitTest_RiscVExecution
         Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
     }
 
+    [TestMethod]
+    public void Contract_Math_Sign()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Math");
+        var result = RiscVExecutionBridge.Execute(binary, "sign");
+        Assert.IsTrue(result.IsHalt,
+            $"sign: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_Math_BigMul()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Math");
+        var result = RiscVExecutionBridge.Execute(binary, "bigMul");
+        Assert.IsTrue(result.IsHalt,
+            $"bigMul: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_Math_DivRemInt()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Math");
+        var result = RiscVExecutionBridge.Execute(binary, "DivRemInt");
+        Assert.IsTrue(result.IsHalt,
+            $"DivRemInt: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+    }
+
+    [TestMethod]
+    public void Contract_Math_ClampInt()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Math");
+        var result = RiscVExecutionBridge.Execute(binary, "ClampInt");
+        Assert.IsTrue(result.IsHalt,
+            $"ClampInt: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
     // -----------------------------------------------------------
     //  Contract_Concat: string concatenation
     // -----------------------------------------------------------
@@ -277,6 +324,42 @@ public class UnitTest_RiscVExecution
         var result = RiscVExecutionBridge.Execute(binary, "TestStringAdd1");
         Assert.IsTrue(result.IsHalt,
             $"TestStringAdd1: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(1u, result.Stack[0].Kind, "Result should be ByteString (kind=1).");
+    }
+
+    [TestMethod]
+    public void Contract_Concat_TestStringAdd2()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Concat");
+        var result = RiscVExecutionBridge.Execute(binary, "TestStringAdd2");
+        Assert.IsTrue(result.IsHalt,
+            $"TestStringAdd2: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(1u, result.Stack[0].Kind, "Result should be ByteString (kind=1).");
+    }
+
+    [TestMethod]
+    public void Contract_Concat_TestStringAdd3()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Concat");
+        var result = RiscVExecutionBridge.Execute(binary, "TestStringAdd3");
+        Assert.IsTrue(result.IsHalt,
+            $"TestStringAdd3: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(1u, result.Stack[0].Kind, "Result should be ByteString (kind=1).");
+    }
+
+    [TestMethod]
+    public void Contract_Concat_TestStringAdd4()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Concat");
+        var result = RiscVExecutionBridge.Execute(binary, "TestStringAdd4");
+        Assert.IsTrue(result.IsHalt,
+            $"TestStringAdd4: Expected HALT but got state={result.State}. Error: {result.Error}");
         Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
         Assert.AreEqual(1u, result.Stack[0].Kind, "Result should be ByteString (kind=1).");
     }
@@ -304,6 +387,41 @@ public class UnitTest_RiscVExecution
         var result = RiscVExecutionBridge.Execute(binary, "Switch6");
         Assert.IsTrue(result.IsHalt,
             $"Switch6: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+    }
+
+    [TestMethod]
+    public void Contract_Switch_SwitchInteger()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Switch");
+        var result = RiscVExecutionBridge.Execute(binary, "SwitchInteger");
+        Assert.IsTrue(result.IsHalt,
+            $"SwitchInteger: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_Switch_SwitchLongLong()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Switch");
+        var result = RiscVExecutionBridge.Execute(binary, "SwitchLongLong");
+        Assert.IsTrue(result.IsHalt,
+            $"SwitchLongLong: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_Switch_Switch6Inline()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Switch");
+        var result = RiscVExecutionBridge.Execute(binary, "Switch6Inline");
+        Assert.IsTrue(result.IsHalt,
+            $"Switch6Inline: Expected HALT but got state={result.State}. Error: {result.Error}");
         Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
     }
 
@@ -335,8 +453,316 @@ public class UnitTest_RiscVExecution
         Assert.AreEqual(3u, result.Stack[0].Kind, "Result should be Boolean (kind=3).");
     }
 
+    [TestMethod]
+    public void Contract_Integer_IsNegativeInt()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Integer");
+        var result = RiscVExecutionBridge.Execute(binary, "IsNegativeInt");
+        Assert.IsTrue(result.IsHalt,
+            $"IsNegativeInt: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(3u, result.Stack[0].Kind, "Result should be Boolean (kind=3).");
+    }
+
+    [TestMethod]
+    public void Contract_Integer_IsPositiveInt()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Integer");
+        var result = RiscVExecutionBridge.Execute(binary, "IsPositiveInt");
+        Assert.IsTrue(result.IsHalt,
+            $"IsPositiveInt: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(3u, result.Stack[0].Kind, "Result should be Boolean (kind=3).");
+    }
+
+    [TestMethod]
+    public void Contract_Integer_ClampInt()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Integer");
+        var result = RiscVExecutionBridge.Execute(binary, "ClampInt");
+        Assert.IsTrue(result.IsHalt,
+            $"ClampInt: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_Integer_LeadingZeroCountInt()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Integer");
+        var result = RiscVExecutionBridge.Execute(binary, "LeadingZeroCountInt");
+        Assert.IsTrue(result.IsHalt,
+            $"LeadingZeroCountInt: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_Integer_PopCountInt()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Integer");
+        var result = RiscVExecutionBridge.Execute(binary, "PopCountInt");
+        Assert.IsTrue(result.IsHalt,
+            $"PopCountInt: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
     // -----------------------------------------------------------
     //  Contract_BigInteger: BigInteger operations
+    // -----------------------------------------------------------
+
+    [TestMethod]
+    public void Contract_BigInteger_TestPow()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BigInteger");
+        var result = RiscVExecutionBridge.Execute(binary, "TestPow");
+        Assert.IsTrue(result.IsHalt,
+            $"TestPow: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_BigInteger_TestSqrt()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BigInteger");
+        var result = RiscVExecutionBridge.Execute(binary, "TestSqrt");
+        Assert.IsTrue(result.IsHalt,
+            $"TestSqrt: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_BigInteger_TestIsZero()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BigInteger");
+        var result = RiscVExecutionBridge.Execute(binary, "testIsZero");
+        Assert.IsTrue(result.IsHalt,
+            $"testIsZero: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(3u, result.Stack[0].Kind, "Result should be Boolean (kind=3).");
+    }
+
+    [TestMethod]
+    public void Contract_BigInteger_TestIsOne()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BigInteger");
+        var result = RiscVExecutionBridge.Execute(binary, "testIsOne");
+        Assert.IsTrue(result.IsHalt,
+            $"testIsOne: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(3u, result.Stack[0].Kind, "Result should be Boolean (kind=3).");
+    }
+
+    [TestMethod]
+    public void Contract_BigInteger_TestSubtract()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BigInteger");
+        var result = RiscVExecutionBridge.Execute(binary, "TestSubtract");
+        Assert.IsTrue(result.IsHalt,
+            $"TestSubtract: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_BigInteger_TestMultiply()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BigInteger");
+        var result = RiscVExecutionBridge.Execute(binary, "TestMultiply");
+        Assert.IsTrue(result.IsHalt,
+            $"TestMultiply: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_BigInteger_TestDivide()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BigInteger");
+        var result = RiscVExecutionBridge.Execute(binary, "TestDivide");
+        Assert.IsTrue(result.IsHalt,
+            $"TestDivide: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    [TestMethod]
+    public void Contract_BigInteger_TestModPow()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BigInteger");
+        var result = RiscVExecutionBridge.Execute(binary, "TestModPow");
+        Assert.IsTrue(result.IsHalt,
+            $"TestModPow: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(0u, result.Stack[0].Kind, "Result should be Integer (kind=0).");
+    }
+
+    // -----------------------------------------------------------
+    //  Contract_BinaryExpression: binary operations
+    // -----------------------------------------------------------
+
+    [TestMethod]
+    public void Contract_BinaryExpression_BinaryIs()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BinaryExpression");
+        var result = RiscVExecutionBridge.Execute(binary, "BinaryIs");
+        Assert.IsTrue(result.IsHalt,
+            $"BinaryIs: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(0, result.Stack.Length, "void method should produce empty result stack.");
+    }
+
+    [TestMethod]
+    public void Contract_BinaryExpression_BinaryAs()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_BinaryExpression");
+        var result = RiscVExecutionBridge.Execute(binary, "BinaryAs");
+        Assert.IsTrue(result.IsHalt,
+            $"BinaryAs: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(0, result.Stack.Length, "void method should produce empty result stack.");
+    }
+
+    // -----------------------------------------------------------
+    //  Contract_Array: array construction and indexing
+    // -----------------------------------------------------------
+
+    [TestMethod]
+    public void Contract_Array_TestIntArray()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Array");
+        var result = RiscVExecutionBridge.Execute(binary, "TestIntArray");
+        Assert.IsTrue(result.IsHalt,
+            $"TestIntArray: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+    }
+
+    [TestMethod]
+    public void Contract_Array_TestDefaultArray()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Array");
+        var result = RiscVExecutionBridge.Execute(binary, "TestDefaultArray");
+        Assert.IsTrue(result.IsHalt,
+            $"TestDefaultArray: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(3u, result.Stack[0].Kind, "Result should be Boolean (kind=3).");
+    }
+
+    [TestMethod]
+    public void Contract_Array_TestIntArrayInit()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Array");
+        var result = RiscVExecutionBridge.Execute(binary, "TestIntArrayInit");
+        Assert.IsTrue(result.IsHalt,
+            $"TestIntArrayInit: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+    }
+
+    [TestMethod]
+    public void Contract_Array_TestEmptyArray()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Array");
+        var result = RiscVExecutionBridge.Execute(binary, "TestEmptyArray");
+        Assert.IsTrue(result.IsHalt,
+            $"TestEmptyArray: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+    }
+
+    [TestMethod]
+    public void Contract_Array_TestJaggedArray()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Array");
+        var result = RiscVExecutionBridge.Execute(binary, "TestJaggedArray");
+        Assert.IsTrue(result.IsHalt,
+            $"TestJaggedArray: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+    }
+
+    // -----------------------------------------------------------
+    //  Contract_Enum: enum value mapping
+    // -----------------------------------------------------------
+
+    [TestMethod]
+    public void Contract_Enum_TestEnumGetNames()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Enum");
+        var result = RiscVExecutionBridge.Execute(binary, "TestEnumGetNames");
+        Assert.IsTrue(result.IsHalt,
+            $"TestEnumGetNames: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+    }
+
+    [TestMethod]
+    public void Contract_Enum_TestEnumGetValues()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Enum");
+        var result = RiscVExecutionBridge.Execute(binary, "TestEnumGetValues");
+        Assert.IsTrue(result.IsHalt,
+            $"TestEnumGetValues: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+    }
+
+    [TestMethod]
+    public void Contract_Enum_TestEnumIsDefined()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Enum");
+        var result = RiscVExecutionBridge.Execute(binary, "TestEnumIsDefined");
+        Assert.IsTrue(result.IsHalt,
+            $"TestEnumIsDefined: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(3u, result.Stack[0].Kind, "Result should be Boolean (kind=3).");
+    }
+
+    [TestMethod]
+    public void Contract_Enum_TestEnumGetName()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Enum");
+        var result = RiscVExecutionBridge.Execute(binary, "TestEnumGetName");
+        Assert.IsTrue(result.IsHalt,
+            $"TestEnumGetName: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(1u, result.Stack[0].Kind, "Result should be ByteString (kind=1).");
+    }
+
+    [TestMethod]
+    public void Contract_Enum_TestEnumToString()
+    {
+        RequireRuntime();
+        var binary = LoadBinaryOrSkip("Contract_Enum");
+        var result = RiscVExecutionBridge.Execute(binary, "TestEnumToString");
+        Assert.IsTrue(result.IsHalt,
+            $"TestEnumToString: Expected HALT but got state={result.State}. Error: {result.Error}");
+        Assert.AreEqual(1, result.Stack.Length, "Should return one item.");
+        Assert.AreEqual(1u, result.Stack[0].Kind, "Result should be ByteString (kind=1).");
+    }
+
+    // -----------------------------------------------------------
+    //  Contract_MissingCheckWitness: Storage.Put via TestHostCallback
     // -----------------------------------------------------------
 
     [TestMethod]
