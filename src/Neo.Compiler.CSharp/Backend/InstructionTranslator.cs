@@ -75,12 +75,12 @@ internal static class InstructionTranslator
                 return "ctx.push_null();";
 
             case OpCode.PUSHA:
-            {
-                // PUSHA operand is a relative offset; NeoVM pushes the absolute address.
-                int relOffset = BinaryPrimitives.ReadInt32LittleEndian(instr.Operand!);
-                int absOffset = instr.Offset + relOffset;
-                return $"ctx.push_int({absOffset});";
-            }
+                {
+                    // PUSHA operand is a relative offset; NeoVM pushes the absolute address.
+                    int relOffset = BinaryPrimitives.ReadInt32LittleEndian(instr.Operand!);
+                    int absOffset = instr.Offset + relOffset;
+                    return $"ctx.push_int({absOffset});";
+                }
 
             case OpCode.PUSHDATA1:
                 return $"ctx.push_bytes(&[{FormatBytes(instr.Operand.AsSpan(1))}]);";
@@ -136,11 +136,11 @@ internal static class InstructionTranslator
             case OpCode.SYSCALL:
                 return $"ctx.syscall(0x{BinaryPrimitives.ReadUInt32LittleEndian(instr.Operand!):x8});";
             case OpCode.CALLT:
-            {
-                ushort token = BinaryPrimitives.ReadUInt16LittleEndian(instr.Operand!);
-                uint calltHash = 0x43540000u | token;
-                return $"ctx.syscall(0x{calltHash:x8});";
-            }
+                {
+                    ushort token = BinaryPrimitives.ReadUInt16LittleEndian(instr.Operand!);
+                    uint calltHash = 0x43540000u | token;
+                    return $"ctx.syscall(0x{calltHash:x8});";
+                }
 
             // ---- Stack manipulation ----
             case OpCode.DEPTH:

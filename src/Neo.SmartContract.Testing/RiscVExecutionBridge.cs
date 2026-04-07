@@ -1122,8 +1122,8 @@ public static class RiscVExecutionBridge
                 }
                 break;
 
-            // 0=Integer, 2=Null, 3=Boolean, 6=Iterator, 9=Interop
-            // These use IntegerValue only; no BytesPtr payload.
+                // 0=Integer, 2=Null, 3=Boolean, 6=Iterator, 9=Interop
+                // These use IntegerValue only; no BytesPtr payload.
         }
 
         return new ResultStackItem

@@ -13,6 +13,7 @@ LOGDIR="$FUZZ_ROOT/logs"
 PIDDIR="$FUZZ_ROOT/pids"
 RUNNER="$FUZZ_ROOT/run_target_forever.sh"
 LAUNCHER_PID_FILE="$PIDDIR/launcher.pid"
+ACTIVE_TARGETS_FILE="$PIDDIR/targets.txt"
 
 ALL_TARGETS=(
     fuzz_compile
@@ -23,14 +24,52 @@ ALL_TARGETS=(
 )
 
 if [ "$#" -eq 0 ]; then
-    TARGETS=("${ALL_TARGETS[@]}")
+    TARGET_SPECS=("${ALL_TARGETS[@]}")
 else
-    TARGETS=("$@")
+    TARGET_SPECS=("$@")
 fi
 
 mkdir -p "$LOGDIR" "$PIDDIR"
 PIDS=()
 STOPPING=0
+declare -A SEEN_RUN_IDS=()
+
+is_known_target() {
+    local target="$1"
+
+    for known_target in "${ALL_TARGETS[@]}"; do
+        if [ "$known_target" = "$target" ]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+parse_target_spec() {
+    local spec="$1"
+    local target instance run_id
+
+    if [[ "$spec" == *"@"* ]]; then
+        target="${spec%@*}"
+        instance="${spec#*@}"
+        if [ -z "$target" ] || [ -z "$instance" ]; then
+            echo "Invalid target spec '$spec'. Use <target> or <target>@<instance>." >&2
+            return 1
+        fi
+        run_id="$target@$instance"
+    else
+        target="$spec"
+        run_id="$spec"
+    fi
+
+    if ! is_known_target "$target"; then
+        echo "Unknown fuzz target '$target' in spec '$spec'." >&2
+        return 1
+    fi
+
+    printf '%s\t%s\n' "$target" "$run_id"
+}
 
 cleanup() {
     STOPPING=1
@@ -43,7 +82,7 @@ cleanup() {
         wait "$pid" 2>/dev/null || true
     done
 
-    rm -f "$FUZZ_ROOT/fuzz.pids" "$LAUNCHER_PID_FILE"
+    rm -f "$FUZZ_ROOT/fuzz.pids" "$LAUNCHER_PID_FILE" "$ACTIVE_TARGETS_FILE"
     find "$PIDDIR" -maxdepth 1 -type f -name '*.pid' -delete 2>/dev/null || true
 }
 
@@ -66,7 +105,7 @@ if [ -f "$LAUNCHER_PID_FILE" ]; then
 fi
 
 echo "=== neo-devpack-dotnet persistent fuzzer ==="
-echo "Targets: ${TARGETS[*]}"
+echo "Targets: ${TARGET_SPECS[*]}"
 echo "Logs:    $LOGDIR/"
 echo "Started: $(date)"
 echo ""
@@ -82,26 +121,37 @@ if [ ! -f "$HARNESS_DLL" ]; then
 fi
 
 printf '%s\n' "$$" > "$LAUNCHER_PID_FILE"
+: > "$ACTIVE_TARGETS_FILE"
 
-for target in "${TARGETS[@]}"; do
-    CORPUS="$FUZZ_ROOT/corpus/$target"
-    ARTIFACTS="$FUZZ_ROOT/artifacts/$target"
-    LOGFILE="$LOGDIR/${target}.log"
-    PIDFILE="$PIDDIR/${target}.pid"
+for target_spec in "${TARGET_SPECS[@]}"; do
+    IFS=$'\t' read -r target run_id <<< "$(parse_target_spec "$target_spec")"
+
+    if [ -n "${SEEN_RUN_IDS[$run_id]:-}" ]; then
+        echo "Duplicate fuzz instance '$run_id'." >&2
+        exit 1
+    fi
+    SEEN_RUN_IDS["$run_id"]=1
+
+    CORPUS="$FUZZ_ROOT/corpus/$run_id"
+    ARTIFACTS="$FUZZ_ROOT/artifacts/$run_id"
+    LOGFILE="$LOGDIR/${run_id}.log"
+    PIDFILE="$PIDDIR/${run_id}.pid"
 
     mkdir -p "$CORPUS" "$ARTIFACTS"
 
     if [ -f "$PIDFILE" ]; then
         EXISTING_PID="$(cat "$PIDFILE")"
         if [ -n "$EXISTING_PID" ] && kill -0 "$EXISTING_PID" 2>/dev/null; then
-            echo "Target loop '$target' is already running with PID $EXISTING_PID." >&2
+            echo "Target loop '$run_id' is already running with PID $EXISTING_PID." >&2
             exit 1
         fi
 
         rm -f "$PIDFILE"
     fi
 
-    echo "[$target] Starting persistent fuzz loop..."
+    printf '%s\t%s\n' "$run_id" "$target" >> "$ACTIVE_TARGETS_FILE"
+
+    echo "[$run_id] Starting persistent fuzz loop for $target..."
     "$RUNNER" \
         "$target" \
         "$HARNESS_DLL" \
@@ -112,7 +162,7 @@ for target in "${TARGETS[@]}"; do
         "$PIDFILE" >> "$LOGFILE" 2>&1 &
 
     PIDS+=("$!")
-    echo "[$target] PID=${PIDS[-1]} running in background"
+    echo "[$run_id] PID=${PIDS[-1]} running in background"
 done
 
 echo ""

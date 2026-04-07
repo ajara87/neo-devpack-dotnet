@@ -195,26 +195,26 @@ internal class NeoVmToRustTranslator
                 return "_pc = ctx.pop_integer() as i32;";
 
             case OpCode.CALLT:
-            {
-                ushort token = BinaryPrimitives.ReadUInt16LittleEndian(instr.Operand!);
-                uint calltHash = 0x43540000u | token;
-                return $"ctx.syscall(0x{calltHash:x8}); {advance}";
-            }
+                {
+                    ushort token = BinaryPrimitives.ReadUInt16LittleEndian(instr.Operand!);
+                    uint calltHash = 0x43540000u | token;
+                    return $"ctx.syscall(0x{calltHash:x8}); {advance}";
+                }
 
             case OpCode.TRY:
             case OpCode.TRY_L:
-            {
-                int catchOffset = instr.Target?.Instruction?.Offset ?? 0;
-                int finallyOffset = instr.Target2?.Instruction?.Offset ?? 0;
-                return $"ctx.try_enter({catchOffset}, {finallyOffset}); {advance}";
-            }
+                {
+                    int catchOffset = instr.Target?.Instruction?.Offset ?? 0;
+                    int finallyOffset = instr.Target2?.Instruction?.Offset ?? 0;
+                    return $"ctx.try_enter({catchOffset}, {finallyOffset}); {advance}";
+                }
 
             case OpCode.ENDTRY:
             case OpCode.ENDTRY_L:
-            {
-                int endTarget = GetTargetOffset(instr);
-                return $"_pc = ctx.end_try({endTarget});";
-            }
+                {
+                    int endTarget = GetTargetOffset(instr);
+                    return $"_pc = ctx.end_try({endTarget});";
+                }
 
             case OpCode.ENDFINALLY:
                 return "_pc = ctx.end_finally();";
@@ -236,14 +236,14 @@ internal class NeoVmToRustTranslator
                 return "ctx.throw_ex();";
 
             default:
-            {
-                // Data / arithmetic / stack / collection instructions
-                string? code = InstructionTranslator.Translate(instr);
-                if (code != null)
-                    return $"{code} {advance}";
-                // Unknown opcode — fault rather than silently skip
-                return $"ctx.fault(\"unsupported opcode: {instr.OpCode}\");";
-            }
+                {
+                    // Data / arithmetic / stack / collection instructions
+                    string? code = InstructionTranslator.Translate(instr);
+                    if (code != null)
+                        return $"{code} {advance}";
+                    // Unknown opcode — fault rather than silently skip
+                    return $"ctx.fault(\"unsupported opcode: {instr.OpCode}\");";
+                }
         }
     }
 
