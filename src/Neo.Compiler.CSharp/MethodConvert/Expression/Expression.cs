@@ -47,6 +47,7 @@ internal partial class MethodConvert
 
     private bool TryConvertConstant(SemanticModel model, ExpressionSyntax syntax, SyntaxNode? syntaxNode)
     {
+        ITypeSymbol? typeSymbol = null;
         try
         {
             // Get the correct model for the syntax node (fixes partial class issues)
@@ -57,7 +58,7 @@ internal partial class MethodConvert
             if (value == null)
                 return false;
 
-            ITypeSymbol? typeSymbol = GetTypeSymbol(syntaxNode, model);
+            typeSymbol = GetTypeSymbol(syntaxNode, model);
 
             if (typeSymbol != null)
             {
@@ -66,6 +67,14 @@ internal partial class MethodConvert
 
             Push(value);
             return true;
+        }
+        catch (CompilationException)
+        {
+            throw;
+        }
+        catch (Exception e) when (typeSymbol is not null && e is FormatException or ArgumentException)
+        {
+            throw new CompilationException(syntax, DiagnosticId.InvalidInitialValue, $"Invalid {typeSymbol.Name} literal");
         }
         catch (Exception e)
         {
