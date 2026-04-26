@@ -420,7 +420,10 @@ namespace Neo.Compiler
                     Arguments = $"restore \"{csproj}\"",
                     WorkingDirectory = folder
                 });
-                process?.WaitForExit();
+                ArgumentNullException.ThrowIfNull(process);
+                process.WaitForExit();
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException($"dotnet restore failed with exit code {process.ExitCode} for '{csproj}'.");
             }
 
             if (!File.Exists(assetsPath))
