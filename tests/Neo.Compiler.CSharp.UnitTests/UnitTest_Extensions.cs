@@ -23,5 +23,29 @@ namespace Neo.Compiler.CSharp.UnitTests
             Assert.AreEqual(5, Contract.TestSum(3, 2));
             AssertGasConsumed(1065060);
         }
+
+        [TestMethod]
+        public void TestExtensionMemberMethod()
+        {
+            Assert.AreEqual(8, Contract.TestExtensionMemberMethod(4));
+        }
+
+        [TestMethod]
+        public void TestExtensionMemberProperty()
+        {
+            Assert.AreEqual(12, Contract.TestExtensionMemberProperty(4));
+        }
+
+        [TestMethod]
+        public void TestExtensionMemberCombination()
+        {
+            Assert.AreEqual(20, Contract.TestExtensionMemberCombination(4));
+        }
+
+        [TestMethod]
+        public void TestExtensionMemberPropertySetter()
+        {
+            Assert.AreEqual(7, Contract.TestExtensionMemberPropertySetter(7));
+        }
     }
 }
