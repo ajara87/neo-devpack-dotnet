@@ -10,9 +10,13 @@
 // modifications are permitted.
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Testing;
+using Neo.VM;
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Neo.Compiler.CSharp.UnitTests
 {
@@ -94,7 +98,7 @@ namespace Neo.Compiler.CSharp.UnitTests
             var output = CaptureReport(Contract_NEP17.Nef, Contract_NEP17.Manifest);
             // The report must never contain the GAS token symbol or a "X GAS" pattern,
             // which would imply a fabricated runtime cost estimate.
-            Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(output, @"\d+(\.\d+)?\s*GAS"), "Report must not contain any invented GAS cost values");
+            Assert.IsFalse(Regex.IsMatch(output, @"\d+(\.\d+)?\s*GAS"), "Report must not contain any invented GAS cost values");
         }
 
         [TestMethod]
@@ -159,7 +163,6 @@ namespace Neo.Compiler.CSharp.UnitTests
         [TestMethod]
         public void Test_GasReport_DoesNotWriteToStdErr()
         {
-            // Generating a report for a valid contract must produce no stderr output.
             var stderrCapture = new StringWriter();
             var originalErr = Console.Error;
             try
@@ -178,19 +181,283 @@ namespace Neo.Compiler.CSharp.UnitTests
         public void Test_GasReport_SafeMethodCount_MatchesManifest()
         {
             var manifest = Contract_NEP17.Manifest;
-            int expectedSafe = 0;
+            var expectedSafe = 0;
             foreach (var m in manifest.Abi.Methods)
                 if (m.Safe) expectedSafe++;
 
             var output = CaptureReport(Contract_NEP17.Nef, manifest);
 
-            // Extract the value after "Safe methods:"
-            int idx = output.IndexOf("Safe methods:", StringComparison.Ordinal);
+            var idx = output.IndexOf("Safe methods:", StringComparison.Ordinal);
             Assert.IsTrue(idx >= 0);
-            string afterLabel = output[(idx + "Safe methods:".Length)..].TrimStart();
-            string value = afterLabel.Split('\n')[0].Trim();
+            var afterLabel = output[(idx + "Safe methods:".Length)..].TrimStart();
+            var value = afterLabel.Split('\n')[0].Trim();
             Assert.IsTrue(int.TryParse(value, out int reported), $"Safe methods count must be an integer, got: '{value}'");
             Assert.AreEqual(expectedSafe, reported, "Reported safe method count must match the manifest ABI");
+        }
+
+        [TestMethod]
+        public void Test_GasReport_InstructionCount_NA_WhenScriptUndecodable()
+        {
+            var badScript = new byte[] { (byte)OpCode.PUSHDATA1 };
+            var nef = new NefFile
+            {
+                Compiler = "test",
+                Source = "test.cs",
+                Tokens = [],
+                Script = badScript
+            };
+            nef.CheckSum = NefFile.ComputeChecksum(nef);
+
+            var manifest = BuildMinimalManifest("BadScript");
+            var output = CaptureReport(nef, manifest);
+
+            Assert.IsTrue(output.Contains("Instruction count:"), "Report must contain the instruction count label");
+            var idx = output.IndexOf("Instruction count:", StringComparison.Ordinal);
+            var afterLabel = output[(idx + "Instruction count:".Length)..].TrimStart();
+            var value = afterLabel.Split('\n')[0].Trim();
+            Assert.AreEqual("N/A", value, "Instruction count must be N/A when the script cannot be decoded");
+        }
+
+        [TestMethod]
+        public void Test_GasReport_NoEventsSection_WhenContractHasNoEvents()
+        {
+            var output = CaptureReport(Contract_ABISafe.Nef, Contract_ABISafe.Manifest);
+
+            // The events block header is the column label "Event" followed by "Parameters".
+            // It must NOT appear when the contract has no events.
+            Assert.IsFalse(output.Contains("Event                     Parameters"), "Events table header must be omitted when there are no events");
+        }
+
+        [TestMethod]
+        public void Test_GasReport_Event_WithNoParameters_ShowsDash()
+        {
+            var nef = Contract_ABISafe.Nef;
+            var manifest = BuildManifestWithEvents(
+            [
+                new ContractEventDescriptor
+                {
+                    Name = "NoParamEvent",
+                    Parameters = []
+                }
+            ]);
+
+            var output = CaptureReport(nef, manifest);
+
+            Assert.IsTrue(output.Contains("NoParamEvent"), "Report must list the event name");
+            var evIdx = output.IndexOf("NoParamEvent", StringComparison.Ordinal);
+            var evRow = output[evIdx..].Split('\n')[0];
+            Assert.IsTrue(evRow.TrimEnd().EndsWith("-"), $"Event with no parameters must show '-', row was: '{evRow}'");
+        }
+
+        [TestMethod]
+        public void Test_GasReport_UnsafeMethod_ShowsNo()
+        {
+            var output = CaptureReport(Contract_NEP17.Nef, Contract_NEP17.Manifest);
+            var idx = output.IndexOf("transfer", StringComparison.Ordinal);
+            Assert.IsTrue(idx >= 0, "transfer method must appear in the report");
+            string row = output[idx..].Split('\n')[0];
+            Assert.IsTrue(row.Contains("no"), $"transfer must be marked unsafe (no), row was: '{row}'");
+        }
+
+        [TestMethod]
+        public void Test_GasReport_Method_WithParameters_ShowsTypes()
+        {
+            var output = CaptureReport(Contract_NEP17.Nef, Contract_NEP17.Manifest);
+            var idx = output.IndexOf("transfer", StringComparison.Ordinal);
+            Assert.IsTrue(idx >= 0);
+            string row = output[idx..].Split('\n')[0];
+            Assert.IsTrue(row.Contains("Hash160"), $"transfer row must list parameter types, row was: '{row}'");
+        }
+
+        [TestMethod]
+        public void Test_GasReport_Event_WithParameters_ShowsTypes()
+        {
+            var output = CaptureReport(Contract_Event.Nef, Contract_Event.Manifest);
+
+            var evSectionIdx = output.IndexOf("Event", StringComparison.Ordinal);
+            Assert.IsTrue(evSectionIdx >= 0, "Events section must be present");
+            string evSection = output[evSectionIdx..];
+            Assert.IsTrue(evSection.Contains("ByteArray"), "Event parameters must list their types (ByteArray expected)");
+        }
+
+        [TestMethod]
+        public void Test_GasReport_CLI_Flag_PrintsReportToStdout()
+        {
+            // Find the Contract_NEP17 source file by navigating from the test binary.
+            var baseDir = Directory.GetCurrentDirectory();
+            var contractPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", "..", "tests", "Neo.Compiler.CSharp.TestContracts", "Contract_NEP17.cs"));
+
+            if (!File.Exists(contractPath))
+            {
+                Assert.Inconclusive($"Test contract not found at {contractPath}; skipping CLI test.");
+                return;
+            }
+
+            var stdoutCapture = new StringWriter();
+            var stderrCapture = new StringWriter();
+            int exitCode;
+
+            var originalOut = Console.Out;
+            var originalErr = Console.Error;
+            try
+            {
+                Console.SetOut(stdoutCapture);
+                Console.SetError(stderrCapture);
+                exitCode = Program.Main(new[] { contractPath, "--gas-report" });
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Console.SetError(originalErr);
+            }
+
+            Assert.AreEqual(0, exitCode, $"Compiler must succeed. stderr: {stderrCapture}");
+            var stdout = stdoutCapture.ToString();
+            Assert.IsTrue(stdout.Contains("Static Bytecode Report"), "stdout must contain the gas report when --gas-report is passed");
+            Assert.IsTrue(stdout.Contains("Script size:"), "stdout must contain script size line");
+            Assert.IsTrue(stdout.Contains("cannot be estimated exactly"), "stdout must contain the GAS disclaimer");
+        }
+
+        [TestMethod]
+        public void Test_GasReport_CLI_WithoutFlag_NoReportInOutput()
+        {
+            var baseDir = Directory.GetCurrentDirectory();
+            var contractPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", "..", "tests", "Neo.Compiler.CSharp.TestContracts", "Contract_NEP17.cs"));
+
+            if (!File.Exists(contractPath))
+            {
+                Assert.Inconclusive($"Test contract not found at {contractPath}; skipping CLI test.");
+                return;
+            }
+
+            var stdoutCapture = new StringWriter();
+            var stderrCapture = new StringWriter();
+            int exitCode;
+
+            var originalOut = Console.Out;
+            var originalErr = Console.Error;
+            try
+            {
+                Console.SetOut(stdoutCapture);
+                Console.SetError(stderrCapture);
+                exitCode = Program.Main([contractPath]);
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Console.SetError(originalErr);
+            }
+
+            Assert.AreEqual(0, exitCode, $"Compiler must succeed. stderr: {stderrCapture}");
+            Assert.IsFalse(stdoutCapture.ToString().Contains("Static Bytecode Report"), "stdout must NOT contain the gas report when --gas-report is absent");
+        }
+
+        // We redirect Console.Out to a writer that throws on WriteLine to simulate
+        // an unexpected failure inside Print, then verify that the compiler still
+        // exits with code 0 and logs the error to stderr.
+        [TestMethod]
+        public void Test_GasReport_CLI_PrintException_LoggedToStderr_CompilationStillSucceeds()
+        {
+            var baseDir = Directory.GetCurrentDirectory();
+            var contractPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", "..", "tests", "Neo.Compiler.CSharp.TestContracts", "Contract_NEP17.cs"));
+
+            if (!File.Exists(contractPath))
+            {
+                Assert.Inconclusive($"Test contract not found at {contractPath}; skipping CLI test.");
+                return;
+            }
+
+            var stderrCapture = new StringWriter();
+            int exitCode;
+
+            var originalOut = Console.Out;
+            var originalErr = Console.Error;
+            try
+            {
+                Console.SetOut(new ThrowingAfterNWritesWriter(originalOut, throwAfter: 5));
+                Console.SetError(stderrCapture);
+                exitCode = Program.Main([contractPath, "--gas-report"]);
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Console.SetError(originalErr);
+            }
+
+            Assert.AreEqual(0, exitCode, "Compilation exit code must be 0 even when the gas report throws");
+            Assert.IsTrue(stderrCapture.ToString().Contains("Gas report error:"), $"stderr must contain 'Gas report error:' when Print throws, stderr was: {stderrCapture}");
+        }
+
+        /// <summary>
+        /// A <see cref="TextWriter"/> that delegates to an inner writer for the first
+        /// <paramref name="throwAfter"/> calls to <see cref="WriteLine()"/> / <see cref="WriteLine(string)"/>,
+        /// then throws <see cref="IOException"/> on subsequent calls.
+        /// </summary>
+        private sealed class ThrowingAfterNWritesWriter : TextWriter
+        {
+            private readonly TextWriter _inner;
+            private readonly int _throwAfter;
+            private int _writeCount;
+
+            public ThrowingAfterNWritesWriter(TextWriter inner, int throwAfter)
+            {
+                _inner = inner;
+                _throwAfter = throwAfter;
+            }
+
+            public override System.Text.Encoding Encoding => _inner.Encoding;
+
+            public override void WriteLine(string? value)
+            {
+                if (++_writeCount > _throwAfter)
+                    throw new IOException("Simulated write failure for test coverage");
+                _inner.WriteLine(value);
+            }
+
+            public override void WriteLine()
+            {
+                if (++_writeCount > _throwAfter)
+                    throw new IOException("Simulated write failure for test coverage");
+                _inner.WriteLine();
+            }
+
+            public override void Write(char value) => _inner.Write(value);
+        }
+
+        private static ContractManifest BuildMinimalManifest(string name)
+        {
+            return new ContractManifest
+            {
+                Name = name,
+                Groups = [],
+                SupportedStandards = [],
+                Abi = new ContractAbi
+                {
+                    Methods = [],
+                    Events = []
+                },
+                Permissions = [],
+                Trusts = WildcardContainer<ContractPermissionDescriptor>.Create(),
+                Extra = null
+            };
+        }
+
+        private static ContractManifest BuildManifestWithEvents(ContractEventDescriptor[] events)
+        {
+            return new ContractManifest
+            {
+                Name = "TestWithEvents",
+                Groups = [],
+                SupportedStandards = [],
+                Abi = new ContractAbi
+                {
+                    Methods = [],
+                    Events = events
+                },
+                Permissions = [],
+                Trusts = WildcardContainer<ContractPermissionDescriptor>.Create(),
+                Extra = null
+            };
         }
     }
 }
