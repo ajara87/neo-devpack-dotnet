@@ -39,8 +39,7 @@ namespace Neo.Compiler.CSharp.UnitTests
             var output = CaptureReport(Contract_NEP17.Nef, Contract_NEP17.Manifest);
             // The word "Static" must appear in the report header so readers understand
             // this is a compile-time analysis, not a runtime measurement.
-            Assert.IsTrue(output.Contains("Static Bytecode Report"),
-                "Report header must read 'Static Bytecode Report' to make its nature explicit");
+            Assert.IsTrue(output.Contains("Static Bytecode Report"), "Report header must read 'Static Bytecode Report' to make its nature explicit");
         }
 
         [TestMethod]
@@ -66,12 +65,11 @@ namespace Neo.Compiler.CSharp.UnitTests
             // Extract the value after "Instruction count:"
             int labelIndex = output.IndexOf("Instruction count:", StringComparison.Ordinal);
             Assert.IsTrue(labelIndex >= 0);
-            string afterLabel = output.Substring(labelIndex + "Instruction count:".Length).TrimStart();
+            string afterLabel = output[(labelIndex + "Instruction count:".Length)..].TrimStart();
             string value = afterLabel.Split('\n')[0].Trim();
             bool isNumeric = int.TryParse(value, out int count) && count > 0;
             bool isNA = value == "N/A";
-            Assert.IsTrue(isNumeric || isNA,
-                $"Instruction count must be a positive integer or N/A, got: '{value}'");
+            Assert.IsTrue(isNumeric || isNA, $"Instruction count must be a positive integer or N/A, got: '{value}'");
         }
 
         [TestMethod]
@@ -96,8 +94,7 @@ namespace Neo.Compiler.CSharp.UnitTests
             var output = CaptureReport(Contract_NEP17.Nef, Contract_NEP17.Manifest);
             // The report must never contain the GAS token symbol or a "X GAS" pattern,
             // which would imply a fabricated runtime cost estimate.
-            Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(output, @"\d+(\.\d+)?\s*GAS"),
-                "Report must not contain any invented GAS cost values");
+            Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(output, @"\d+(\.\d+)?\s*GAS"), "Report must not contain any invented GAS cost values");
         }
 
         [TestMethod]
@@ -125,22 +122,19 @@ namespace Neo.Compiler.CSharp.UnitTests
         [TestMethod]
         public void Test_GasReport_NullNef_Throws()
         {
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                GasReporter.Print(null!, Contract_NEP17.Manifest, Console.Out));
+            Assert.ThrowsExactly<ArgumentNullException>(() => GasReporter.Print(null!, Contract_NEP17.Manifest, Console.Out));
         }
 
         [TestMethod]
         public void Test_GasReport_NullManifest_Throws()
         {
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                GasReporter.Print(Contract_NEP17.Nef, null!, Console.Out));
+            Assert.ThrowsExactly<ArgumentNullException>(() => GasReporter.Print(Contract_NEP17.Nef, null!, Console.Out));
         }
 
         [TestMethod]
         public void Test_GasReport_NullWriter_Throws()
         {
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                GasReporter.Print(Contract_NEP17.Nef, Contract_NEP17.Manifest, null!));
+            Assert.ThrowsExactly<ArgumentNullException>(() => GasReporter.Print(Contract_NEP17.Nef, Contract_NEP17.Manifest, null!));
         }
 
         [TestMethod]
@@ -152,14 +146,12 @@ namespace Neo.Compiler.CSharp.UnitTests
 
             var output = CaptureReport(nef, manifest);
 
-            Assert.IsTrue(output.Contains($"{expectedSize} bytes"),
-                $"Report must show correct script size: {expectedSize} bytes");
+            Assert.IsTrue(output.Contains($"{expectedSize} bytes"), $"Report must show correct script size: {expectedSize} bytes");
         }
 
         [TestMethod]
         public void Test_GasReport_EventsSection_WhenPresent()
         {
-            // Contract_Event has events defined
             var output = CaptureReport(Contract_Event.Nef, Contract_Event.Manifest);
             Assert.IsTrue(output.Contains("Events:"), "Report must contain events count");
         }
@@ -179,8 +171,7 @@ namespace Neo.Compiler.CSharp.UnitTests
             {
                 Console.SetError(originalErr);
             }
-            Assert.AreEqual(string.Empty, stderrCapture.ToString(),
-                "GasReporter.Print must not write anything to stderr for a valid contract");
+            Assert.AreEqual(string.Empty, stderrCapture.ToString(), "GasReporter.Print must not write anything to stderr for a valid contract");
         }
 
         [TestMethod]
@@ -196,12 +187,10 @@ namespace Neo.Compiler.CSharp.UnitTests
             // Extract the value after "Safe methods:"
             int idx = output.IndexOf("Safe methods:", StringComparison.Ordinal);
             Assert.IsTrue(idx >= 0);
-            string afterLabel = output.Substring(idx + "Safe methods:".Length).TrimStart();
+            string afterLabel = output[(idx + "Safe methods:".Length)..].TrimStart();
             string value = afterLabel.Split('\n')[0].Trim();
-            Assert.IsTrue(int.TryParse(value, out int reported),
-                $"Safe methods count must be an integer, got: '{value}'");
-            Assert.AreEqual(expectedSafe, reported,
-                "Reported safe method count must match the manifest ABI");
+            Assert.IsTrue(int.TryParse(value, out int reported), $"Safe methods count must be an integer, got: '{value}'");
+            Assert.AreEqual(expectedSafe, reported, "Reported safe method count must match the manifest ABI");
         }
     }
 }
