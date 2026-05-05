@@ -22,6 +22,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Formatting;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Neo.SmartContract.Analyzer;
 
@@ -82,7 +83,7 @@ public sealed class NepStandardImplementationCodeFixProvider : CodeFixProvider
             editor.AddMember(classDeclaration, member);
         }
 
-        return editor.GetChangedDocument();
+        return await NormalizeLineEndingsAsync(editor.GetChangedDocument(), cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Document> AddInterfaceAsync(Document document, ClassDeclarationSyntax classDeclaration, Diagnostic diagnostic, CancellationToken cancellationToken)
@@ -121,7 +122,7 @@ public sealed class NepStandardImplementationCodeFixProvider : CodeFixProvider
         }
 
         editor.ReplaceNode(classDeclaration, updatedClass);
-        return editor.GetChangedDocument();
+        return await NormalizeLineEndingsAsync(editor.GetChangedDocument(), cancellationToken).ConfigureAwait(false);
     }
 
     private static ImmutableArray<string> ParseMissingMembers(Diagnostic diagnostic)
@@ -209,6 +210,14 @@ public sealed class NepStandardImplementationCodeFixProvider : CodeFixProvider
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword), SyntaxFactory.Token(SyntaxKind.StaticKeyword))
             .WithParameterList(SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameterList)))
             .WithBody(SyntaxFactory.Block(throwStatement));
+    }
+
+    private static async Task<Document> NormalizeLineEndingsAsync(Document document, CancellationToken cancellationToken)
+    {
+        var formatted = await Formatter.FormatAsync(document, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var sourceText = await formatted.GetTextAsync(cancellationToken).ConfigureAwait(false);
+        var normalizedText = sourceText.ToString().Replace("\r\n", "\n");
+        return formatted.WithText(SourceText.From(normalizedText, sourceText.Encoding, SourceHashAlgorithm.Sha1));
     }
 
     private enum NepStandardKind
