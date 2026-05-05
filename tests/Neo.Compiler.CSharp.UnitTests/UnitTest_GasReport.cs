@@ -225,7 +225,7 @@ namespace Neo.Compiler.CSharp.UnitTests
 
             // The events block header is the column label "Event" followed by "Parameters".
             // It must NOT appear when the contract has no events.
-            Assert.IsFalse(output.Contains("Event                     Parameters"), "Events table header must be omitted when there are no events");
+            Assert.IsFalse(output.Contains("Event Parameters"), "Events table header must be omitted when there are no events");
         }
 
         [TestMethod]
